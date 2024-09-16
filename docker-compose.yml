@@ -10,6 +10,13 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+  hecate:
+    build: .
+    environment:
+      - DATABASE_URL=$DATABSE_URL
+      - DATABASE_PORT=$DATABASE_PORT
+    depends_on:
+      - db
 
 volumes:
   postgres_data:
