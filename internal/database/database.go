@@ -29,29 +29,33 @@ func NewDB() (*DB, error) {
 func (db *DB) CreateTables() error {
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS subreddits (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(255) UNIQUE NOT NULL,
+			id SERIAL PRIMARY KEY,
+			name VARCHAR(255) UNIQUE NOT NULL,
 			num_subscribers BIGINT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
 		`CREATE TABLE IF NOT EXISTS posts (
-            id SERIAL PRIMARY KEY,
-            subreddit_id INTEGER REFERENCES subreddits(id),
-            title VARCHAR(300) NOT NULL,
-            content TEXT,
-            post_id VARCHAR(50) UNIQUE NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            metadata JSONB
-        )`,
+			id SERIAL PRIMARY KEY,
+			post_id VARCHAR(50) UNIQUE NOT NULL,
+			subreddit_name VARCHAR(255) NOT NULL,
+			title VARCHAR(300) NOT NULL,
+			content TEXT,
+			discussion_url VARCHAR(255),
+			comment_count INTEGER,
+			upvotes INTEGER,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			metadata JSONB
+		)`,
 		`CREATE TABLE IF NOT EXISTS comments (
-            id SERIAL PRIMARY KEY,
-            post_id INTEGER REFERENCES posts(id),
-            parent_comment_id INTEGER REFERENCES comments(id),
-            content TEXT NOT NULL,
-            comment_id VARCHAR(50) UNIQUE NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            metadata JSONB
-        )`,
+			id SERIAL PRIMARY KEY,
+			post_id INTEGER REFERENCES posts(id),
+			parent_comment_id INTEGER REFERENCES comments(id),
+			content TEXT NOT NULL,
+			comment_id VARCHAR(50) UNIQUE NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			metadata JSONB
+		)`,
 	}
 
 	for _, query := range queries {

@@ -23,20 +23,35 @@ func Main() int {
 	}
 
 	subreddits := []string{"solotravel", "travelhacks", "wanderlust"}
+	client := reddit.NewClient("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0")
 
 	// loop through subreddits
 	for _, subreddit := range subreddits {
-		client := reddit.NewClient("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0")
-		subreddit, err := client.FetchSubreddit(subreddit)
+		fetchedSubReddit, err := client.FetchSubreddit(subreddit)
 		if err != nil {
 			log.Fatalf("Failed to fetch subreddit: %v", err)
 		}
 
 		// Upsert subreddit into database
-		_, err = db.UpsertSubreddit(subreddit.Name, subreddit.NumberOfSubscribers)
+		_, err = db.UpsertSubreddit(fetchedSubReddit.Name, fetchedSubReddit.NumberOfSubscribers)
 		if err != nil {
 			log.Fatalf("Failed to insert subreddit: %v", err)
 		}
+
+		topPosts, err := client.GetTopPosts(subreddit)
+		if err != nil {
+			log.Fatalf("Failed to fetch subreddit posts: %v", err)
+		}
+
+		fmt.Printf("There are %d top posts from r/%s:\n", len(topPosts), subreddit)
+
+		for _, post := range topPosts {
+			err := db.UpsertPost(post, subreddit)
+			if err != nil {
+				log.Fatalf("Failed to insert post: %v", err)
+			}
+		}
 	}
 	return 0
+
 }
