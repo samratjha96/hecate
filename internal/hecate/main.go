@@ -22,7 +22,7 @@ func Main() int {
 		log.Fatalf("Failed to create tables: %v", err)
 	}
 
-	subreddits := []string{"solotravel", "travelhacks", "wanderlust"}
+	subreddits := []string{"solotravel", "travelhacks", "wanderlust", "BuyItForLife", "onebag"}
 	client := reddit.NewClient("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0")
 
 	// loop through subreddits
