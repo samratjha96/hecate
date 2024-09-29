@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -62,7 +63,7 @@ func main() {
 		r.Post("/ingest", subscribeHandler(db))
 	})
 
-	http.ListenAndServe(":3000", r)
+	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("SERVER_PORT")), r)
 }
 
 func subscribeHandler(db *database.DB) http.HandlerFunc {
