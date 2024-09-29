@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type Client struct {
 type Subreddit struct {
 	Name                string
 	NumberOfSubscribers int
+	Posts               RedditPosts
 }
 
 type RedditPost struct {
@@ -65,36 +67,25 @@ func NewClient(userAgent string) *Client {
 	}
 }
 
-func (c *Client) FetchSubreddit(subreddit string) (Subreddit, error) {
-	requestUrl := fmt.Sprintf("https://www.reddit.com/r/%s/hot.json", subreddit)
+func makeRequest(subreddit string, sort string) (*http.Request, error) {
+	requestUrl := fmt.Sprintf("https://www.reddit.com/r/%s/top.json?t=%s", subreddit, strings.ToLower(sort))
 
 	request, err := http.NewRequest("GET", requestUrl, nil)
 	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0")
+
+	return request, err
+}
+
+func (c *Client) DescribeSubreddit(subreddit string, sort string) (Subreddit, error) {
+	request, err := makeRequest(subreddit, sort)
 
 	if err != nil {
 		return Subreddit{}, err
 	}
-
-	responseJson, err := decodeJsonFromRequest[subredditResponseJson](c.httpClient, request)
-
-	return Subreddit{
-		Name:                subreddit,
-		NumberOfSubscribers: responseJson.Data.Children[0].Data.SubredditSubscribers,
-	}, err
-}
-
-func (c *Client) GetTopPosts(subreddit string) (RedditPosts, error) {
-	requestUrl := fmt.Sprintf("https://www.reddit.com/r/%s/top.json", subreddit)
-	request, err := http.NewRequest("GET", requestUrl, nil)
-	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0")
-
-	if err != nil {
-		return make(RedditPosts, 0), err
-	}
 	responseJson, err := decodeJsonFromRequest[subredditResponseJson](c.httpClient, request)
 
 	if len(responseJson.Data.Children) == 0 {
-		return nil, fmt.Errorf("no posts found")
+		return Subreddit{}, fmt.Errorf("no posts found")
 	}
 
 	posts := make([]RedditPost, 0, len(responseJson.Data.Children))
@@ -115,5 +106,9 @@ func (c *Client) GetTopPosts(subreddit string) (RedditPosts, error) {
 		posts = append(posts, forumPost)
 	}
 
-	return posts, err
+	return Subreddit{
+		Name:                subreddit,
+		NumberOfSubscribers: responseJson.Data.Children[0].Data.SubredditSubscribers,
+		Posts:               posts,
+	}, err
 }
