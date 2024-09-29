@@ -97,7 +97,7 @@ func (c *Client) DescribeSubreddit(subreddit string, sort string) (Subreddit, er
 			PostId:        post.Id,
 			Title:         html.UnescapeString(post.Title),
 			Content:       html.UnescapeString(post.SelfText),
-			DiscussionUrl: post.Url,
+			DiscussionUrl: fmt.Sprintf("https://reddit.com%s", post.Permalink),
 			CommentCount:  post.CommentsCount,
 			Upvotes:       post.Upvotes,
 			TimePosted:    time.Unix(int64(post.Time), 0),
