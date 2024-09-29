@@ -13,8 +13,7 @@ type DB struct {
 }
 
 func NewDB() (*DB, error) {
-	connStr := fmt.Sprintf("host=%s port=%s user=admin password=password dbname=hecate sslmode=disable", os.Getenv("DATABASE_URL"), os.Getenv("DATABASE_PORT"))
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}

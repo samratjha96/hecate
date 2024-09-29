@@ -10,12 +10,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
   hecate:
+    container_name: "hecate"
     build: .
     environment:
       - DATABASE_URL=$DATABASE_URL
-      - DATABASE_PORT=$DATABASE_PORT
     depends_on:
       - db
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres_data:
