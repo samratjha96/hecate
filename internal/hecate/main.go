@@ -14,7 +14,7 @@ type RedditSubscription struct {
 }
 
 func Subscribe(db *database.DB, subreddits []RedditSubscription) error {
-	fmt.Println("Hello from Hecate")
+	fmt.Printf("Subscribing to %s", subreddits)
 
 	client := reddit.NewClient("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0")
 

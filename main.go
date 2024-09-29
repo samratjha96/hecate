@@ -80,6 +80,8 @@ func subscribeHandler(db *database.DB) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Write([]byte(fmt.Sprintf("Successfully ingested %+v\n", subreddits.Subscriptions)))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(fmt.Sprintf("Successfully ingested %+v\n", subreddits.Subscriptions))
 	}
 }
