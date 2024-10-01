@@ -60,6 +60,8 @@ func main() {
 	})
 
 	r.Route("/subreddits", func(r chi.Router) {
+
+		r.Get("/", subredditGetHandler(db))
 		r.Post("/ingest", subscribeHandler(db))
 	})
 
@@ -75,13 +77,26 @@ func subscribeHandler(db *database.DB) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		err = hecate.Subscribe(db, subreddits.Subscriptions)
+		subscriptions, err := hecate.Subscribe(db, subreddits.Subscriptions)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(fmt.Sprintf("Successfully ingested %+v\n", subreddits.Subscriptions))
+		json.NewEncoder(w).Encode(subscriptions)
+	}
+}
+
+func subredditGetHandler(db *database.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		subreddits, err := hecate.GetAllSubreddits(db)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusFound)
+		json.NewEncoder(w).Encode(subreddits)
 	}
 }

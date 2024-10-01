@@ -1,0 +1,141 @@
+import React, { useState, useEffect } from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner"
+
+interface Subreddit {
+    name: string
+    numberOfSubscribers: number
+}
+
+const SubredditDashboard = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+
+  const [subreddits, setSubreddits] = useState<Subreddit[]>([]);
+  const [newSubreddit, setNewSubreddit] = useState('');
+  const [timeRange, setTimeRange] = useState('day');
+
+  useEffect(() => {
+    fetchSubreddits();
+  }, []);
+
+  const fetchSubreddits = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/subreddits/');
+      const data = await response.json();
+      setSubreddits(data);
+    } catch (error) {
+      console.error('Error fetching subreddits:', error);
+      toast(`Error fetch subreddits`, {})
+      setSubreddits([{
+        "name": "travelhacks",
+        "numberOfSubscribers": 4706496
+      }]);
+    }
+  };
+
+
+  const handleSubscription = async (subredditName: string, timeRange: string) => {
+    console.log('Ingesting:', { subredditName, timeRange })
+    const response = await fetch(`${apiUrl}/subreddits/ingest`, {
+      method: "POST",
+      body: JSON.stringify({ subreddits: [{name: subredditName, sort_by: timeRange }]}),
+    });
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+    const data = await response.json();
+
+    toast(`Subscribed to r/${data}`)
+
+    // Here you would typically send this data to your backend
+  }
+
+  const handleAddSubreddit = async (e: React.FormEvent<EventTarget>) => {
+    e.preventDefault();
+    if (newSubreddit) {
+      console.log(`Adding new subreddit: ${newSubreddit} with time range: ${timeRange}`);
+      setNewSubreddit('');
+      const response = await fetch(`${apiUrl}/subreddits/ingest`, {
+        method: "POST",
+        body: JSON.stringify({ subreddits: [{name: newSubreddit, sort_by: timeRange }]}),
+      });
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log(data)
+      data.forEach((subreddit: Record<string,any>) => {
+        const addedSubreddit: Subreddit =  {
+            "name": subreddit.Name,
+            "numberOfSubscribers": subreddit.NumberOfSubscribers
+        }
+        setSubreddits(oldArray => [...oldArray, addedSubreddit] );
+        toast(`Subscribed to r/${newSubreddit}`, {})
+      })
+    }
+  };
+
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Subscribed Subreddits</h1>
+      
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Subscribers</TableHead>
+            <TableHead>Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {subreddits.map((subreddit) => (
+            <TableRow key={subreddit.name}>
+                <TableCell>{subreddit.name}</TableCell>
+              <TableCell>{subreddit.numberOfSubscribers}</TableCell>
+              <TableCell>
+                <div className='flex items-center gap-2'>
+                    <Button onClick={() => handleSubscription(subreddit.name, "day")}>Ingest Day</Button>
+                    <Button onClick={() => handleSubscription(subreddit.name, "month")}>Ingest Month</Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Add New Subreddit</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAddSubreddit} className="space-y-4">
+            <Input
+              type="text"
+              placeholder="Enter subreddit name"
+              value={newSubreddit}
+              onChange={(e) => setNewSubreddit(e.target.value)}
+            />
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select time range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">Day</SelectItem>
+                <SelectItem value="month">Month</SelectItem>
+              </SelectContent>
+            </Select>
+          </form>
+        </CardContent>
+        <CardFooter>
+          <Button type="submit" onClick={handleAddSubreddit}>Add Subreddit</Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+};
+
+export default SubredditDashboard;

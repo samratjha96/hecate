@@ -13,10 +13,12 @@ type RedditSubscription struct {
 	SortBy string `json:"sort_by"`
 }
 
-func Subscribe(db *database.DB, subreddits []RedditSubscription) error {
+func Subscribe(db *database.DB, subreddits []RedditSubscription) ([]reddit.Subreddit, error) {
 	fmt.Printf("Subscribing to %s", subreddits)
 
 	client := reddit.NewClient("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0")
+
+	responses := make([]reddit.Subreddit, 0)
 
 	// loop through subreddits
 	for _, subreddit := range subreddits {
@@ -27,12 +29,12 @@ func Subscribe(db *database.DB, subreddits []RedditSubscription) error {
 		_, err = db.UpsertSubreddit(response.Name, response.NumberOfSubscribers)
 		if err != nil {
 			log.Printf("Failed to insert subreddit: %v", err)
-			return err
+			return responses, err
 		}
 
 		if err != nil {
 			log.Printf("Failed to fetch subreddit posts: %v", err)
-			return err
+			return responses, err
 		}
 
 		fmt.Printf("Inserting %d %s posts from r/%s\n", len(response.Posts), subreddit.SortBy, subreddit.Name)
@@ -41,9 +43,35 @@ func Subscribe(db *database.DB, subreddits []RedditSubscription) error {
 			err := db.UpsertPost(post, subreddit.Name)
 			if err != nil {
 				log.Printf("Failed to insert post: %v", err)
-				return err
+				return responses, err
 			}
 		}
+		responses = append(responses, response)
 	}
-	return nil
+	return responses, nil
+}
+
+func GetAllSubreddits(db *database.DB) ([]database.SubredditDao, error) {
+	var subredditDaos []database.SubredditDao
+	nextPage := 1
+
+	for true {
+		fetchedSubredditDaos, newNextPage, err := db.GetSubreddits(database.Paginate{
+			Page:  nextPage,
+			Limit: 10,
+		})
+		if err != nil {
+			log.Printf("Failed to fetch subreddits: %v", err)
+			return nil, err
+		}
+
+		subredditDaos = append(subredditDaos, fetchedSubredditDaos...)
+		if newNextPage == nextPage {
+			break
+		}
+
+		nextPage = newNextPage
+
+	}
+	return subredditDaos, nil
 }

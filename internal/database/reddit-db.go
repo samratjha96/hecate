@@ -2,9 +2,61 @@ package database
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/samratjha96/hecate/internal/reddit"
 )
+
+const (
+	DefaultLimit = 10
+)
+
+type Paginate struct {
+	Limit int
+	Page  int
+}
+
+type SubredditDao struct {
+	Name                string `json:"name"`
+	NumberOfSubscribers int    `json:"numberOfSubscribers"`
+}
+
+func (db *DB) GetSubreddits(pagination Paginate) ([]SubredditDao, int, error) {
+	offset := (pagination.Page - 1) * pagination.Limit
+	nextPage := pagination.Page
+
+	query := `
+        SELECT id, name, num_subscribers, created_at
+        FROM subreddits
+        ORDER BY id
+        LIMIT $1
+        OFFSET $2
+    `
+
+	rows, err := db.Query(query, pagination.Limit, offset)
+	if err != nil {
+		return nil, nextPage, err
+	}
+	defer rows.Close()
+
+	var subreddits []SubredditDao
+	for rows.Next() {
+		var s SubredditDao
+		var id int64
+		var createdAt time.Time
+		err := rows.Scan(&id, &s.Name, &s.NumberOfSubscribers, &createdAt)
+		if err != nil {
+			return subreddits, nextPage, err
+		}
+		subreddits = append(subreddits, s)
+	}
+
+	if len(subreddits) > 0 {
+		nextPage = int(pagination.Page + 1)
+	}
+
+	return subreddits, nextPage, nil
+}
 
 func (db *DB) UpsertSubreddit(name string, numberOfSubscribers int) (int, error) {
 	var id int

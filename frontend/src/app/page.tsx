@@ -1,42 +1,12 @@
 "use client"
 
-import { useState } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "sonner"
+import SubredditDashboard from '@/components/SubredditDashboard'
 
 export default function Home() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-
-  const [userInput, setUserInput] = useState('')
-  const [timeFrame, setTimeFrame] = useState('day')
-
-  const handleSubscription = async () => {
-    console.log('Ingesting:', { userInput, timeFrame })
-    const response = await fetch(`${apiUrl}/subreddits/ingest`, {
-      method: "POST",
-      body: JSON.stringify({ subreddits: [{name: userInput, sort_by: timeFrame }]}),
-    });
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
-    }
-    const _ = await response.json();
-    toast(`Subscribed to r/${userInput}`, {})
-
-    // Here you would typically send this data to your backend
-  }
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+    <div className="flex items-center justify-items-center p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Card className="w-full max-w-md mx-auto">
+        {/* <Card className="w-full max-w-md mx-auto">
           <CardHeader>
             <CardTitle>Subreddits</CardTitle>
           </CardHeader>
@@ -70,7 +40,9 @@ export default function Home() {
           <CardFooter>
             <Button onClick={handleSubscription} className="w-full">Subscribe</Button>
           </CardFooter>
-        </Card>
+        </Card> */}
+
+        <SubredditDashboard />
       </main>
     </div>
   );
