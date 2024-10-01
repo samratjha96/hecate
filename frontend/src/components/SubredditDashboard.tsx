@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -34,18 +34,24 @@ const SubredditDashboard = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   const [subreddits, setSubreddits] = useState<Subreddit[]>([]);
+  const fetchedSubredditsRef = useRef(subreddits);
   const [newSubreddit, setNewSubreddit] = useState("");
   const [timeRange, setTimeRange] = useState("day");
 
   useEffect(() => {
+    fetchedSubredditsRef.current = subreddits;
+  });
+  useEffect(() => {
     fetchSubreddits();
-  }, []);
+  }, [subreddits]);
 
   const fetchSubreddits = async () => {
     try {
       const response = await fetch("http://localhost:8000/subreddits/");
       const data = await response.json();
-      setSubreddits(data);
+      if (fetchedSubredditsRef.current.length !== data.length) {
+        setSubreddits(data);
+      }
     } catch (error) {
       console.error("Error fetching subreddits:", error);
     }
@@ -114,11 +120,13 @@ const SubredditDashboard = () => {
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Button
+                      variant="outline"
                       onClick={() => handleIngestion(subreddit.name, "day")}
                     >
                       Ingest Day
                     </Button>
                     <Button
+                      variant="secondary"
                       onClick={() => handleIngestion(subreddit.name, "month")}
                     >
                       Ingest Month
