@@ -16,7 +16,7 @@ import (
 )
 
 type SubscribePayload struct {
-	Subscriptions []hecate.RedditSubscription `json:"subreddits"`
+	Subscription hecate.RedditSubscription `json:"subreddit"`
 }
 
 func main() {
@@ -71,13 +71,13 @@ func main() {
 func subscribeHandler(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
-		subreddits := SubscribePayload{}
-		err := decoder.Decode(&subreddits)
+		subreddit := SubscribePayload{}
+		err := decoder.Decode(&subreddit)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		subscriptions, err := hecate.Subscribe(db, subreddits.Subscriptions)
+		subscriptions, err := hecate.IngestSubreddit(db, subreddit.Subscription)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

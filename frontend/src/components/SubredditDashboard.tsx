@@ -7,12 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner"
 
 interface Subreddit {
-    name: string
-    numberOfSubscribers: number
+  name: string
+  numberOfSubscribers: number
 }
 
 const SubredditDashboard = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
   const [subreddits, setSubreddits] = useState<Subreddit[]>([]);
   const [newSubreddit, setNewSubreddit] = useState('');
@@ -29,29 +29,22 @@ const SubredditDashboard = () => {
       setSubreddits(data);
     } catch (error) {
       console.error('Error fetching subreddits:', error);
-      toast(`Error fetch subreddits`, {})
-      setSubreddits([{
-        "name": "travelhacks",
-        "numberOfSubscribers": 4706496
-      }]);
     }
   };
 
 
-  const handleSubscription = async (subredditName: string, timeRange: string) => {
+  const handleIngestion = async (subredditName: string, timeRange: string) => {
     console.log('Ingesting:', { subredditName, timeRange })
     const response = await fetch(`${apiUrl}/subreddits/ingest`, {
       method: "POST",
-      body: JSON.stringify({ subreddits: [{name: subredditName, sort_by: timeRange }]}),
+      body: JSON.stringify({ subreddit: { name: subredditName, sortBy: timeRange } }),
     });
     if (!response.ok) {
       throw new Error(`Response status: ${response.status}`);
     }
     const data = await response.json();
 
-    toast(`Subscribed to r/${data}`)
-
-    // Here you would typically send this data to your backend
+    toast(`Ingesting data from r/${data.Name}`)
   }
 
   const handleAddSubreddit = async (e: React.FormEvent<EventTarget>) => {
@@ -61,28 +54,25 @@ const SubredditDashboard = () => {
       setNewSubreddit('');
       const response = await fetch(`${apiUrl}/subreddits/ingest`, {
         method: "POST",
-        body: JSON.stringify({ subreddits: [{name: newSubreddit, sort_by: timeRange }]}),
+        body: JSON.stringify({ subreddits: { name: newSubreddit, sortBy: timeRange } }),
       });
       if (!response.ok) {
         throw new Error(`Response status: ${response.status}`);
       }
       const data = await response.json();
-      console.log(data)
-      data.forEach((subreddit: Record<string,any>) => {
-        const addedSubreddit: Subreddit =  {
-            "name": subreddit.Name,
-            "numberOfSubscribers": subreddit.NumberOfSubscribers
-        }
-        setSubreddits(oldArray => [...oldArray, addedSubreddit] );
-        toast(`Subscribed to r/${newSubreddit}`, {})
-      })
+      const addedSubreddit: Subreddit = {
+        "name": data.Name,
+        "numberOfSubscribers": data.NumberOfSubscribers
+      }
+      setSubreddits(oldArray => [...oldArray, addedSubreddit]);
+      toast(`Subscribed to r/${newSubreddit}`, {})
     }
   };
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Subscribed Subreddits</h1>
-      
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -94,12 +84,12 @@ const SubredditDashboard = () => {
         <TableBody>
           {subreddits.map((subreddit) => (
             <TableRow key={subreddit.name}>
-                <TableCell>{subreddit.name}</TableCell>
+              <TableCell>{subreddit.name}</TableCell>
               <TableCell>{subreddit.numberOfSubscribers}</TableCell>
               <TableCell>
                 <div className='flex items-center gap-2'>
-                    <Button onClick={() => handleSubscription(subreddit.name, "day")}>Ingest Day</Button>
-                    <Button onClick={() => handleSubscription(subreddit.name, "month")}>Ingest Month</Button>
+                  <Button onClick={() => handleIngestion(subreddit.name, "day")}>Ingest Day</Button>
+                  <Button onClick={() => handleIngestion(subreddit.name, "month")}>Ingest Month</Button>
                 </div>
               </TableCell>
             </TableRow>

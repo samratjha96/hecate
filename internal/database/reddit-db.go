@@ -17,11 +17,26 @@ type Paginate struct {
 }
 
 type SubredditDao struct {
-	Name                string `json:"name"`
-	NumberOfSubscribers int    `json:"numberOfSubscribers"`
+	Name                string
+	NumberOfSubscribers int
 }
 
-func (db *DB) GetSubreddits(pagination Paginate) ([]SubredditDao, int, error) {
+func (db *DB) GetAllSubreddits() ([]SubredditDao, error) {
+	fetcher := func(page, limit int) (PaginatedResult[SubredditDao], error) {
+		subreddits, nextPage, err := db.getSubredditsWithPagination(Paginate{
+			Page:  page,
+			Limit: limit,
+		})
+		return PaginatedResult[SubredditDao]{
+			Items:    subreddits,
+			NextPage: nextPage,
+		}, err
+	}
+
+	return FetchAll(fetcher, 1, 10)
+}
+
+func (db *DB) getSubredditsWithPagination(pagination Paginate) ([]SubredditDao, int, error) {
 	offset := (pagination.Page - 1) * pagination.Limit
 	nextPage := pagination.Page
 
@@ -52,10 +67,11 @@ func (db *DB) GetSubreddits(pagination Paginate) ([]SubredditDao, int, error) {
 	}
 
 	if len(subreddits) > 0 {
-		nextPage = int(pagination.Page + 1)
+		nextPage = pagination.Page + 1
 	}
 
 	return subreddits, nextPage, nil
+
 }
 
 func (db *DB) UpsertSubreddit(name string, numberOfSubscribers int) (int, error) {
