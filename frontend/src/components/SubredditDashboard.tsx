@@ -1,22 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import React, { useState, useEffect } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface Subreddit {
-  name: string
-  numberOfSubscribers: number
+  name: string;
+  numberOfSubscribers: number;
 }
 
 const SubredditDashboard = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   const [subreddits, setSubreddits] = useState<Subreddit[]>([]);
-  const [newSubreddit, setNewSubreddit] = useState('');
-  const [timeRange, setTimeRange] = useState('day');
+  const [newSubreddit, setNewSubreddit] = useState("");
+  const [timeRange, setTimeRange] = useState("day");
 
   useEffect(() => {
     fetchSubreddits();
@@ -24,48 +43,53 @@ const SubredditDashboard = () => {
 
   const fetchSubreddits = async () => {
     try {
-      const response = await fetch('http://localhost:8000/subreddits/');
+      const response = await fetch("http://localhost:8000/subreddits/");
       const data = await response.json();
       setSubreddits(data);
     } catch (error) {
-      console.error('Error fetching subreddits:', error);
+      console.error("Error fetching subreddits:", error);
     }
   };
 
-
   const handleIngestion = async (subredditName: string, timeRange: string) => {
-    console.log('Ingesting:', { subredditName, timeRange })
+    console.log("Ingesting:", { subredditName, timeRange });
     const response = await fetch(`${apiUrl}/subreddits/ingest`, {
       method: "POST",
-      body: JSON.stringify({ subreddit: { name: subredditName, sortBy: timeRange } }),
+      body: JSON.stringify({
+        subreddit: { name: subredditName, sortBy: timeRange },
+      }),
     });
     if (!response.ok) {
       throw new Error(`Response status: ${response.status}`);
     }
     const data = await response.json();
 
-    toast(`Ingesting data from r/${data.Name}`)
-  }
+    toast(`Ingesting data from r/${data.Name}`);
+  };
 
   const handleAddSubreddit = async (e: React.FormEvent<EventTarget>) => {
     e.preventDefault();
     if (newSubreddit) {
-      console.log(`Adding new subreddit: ${newSubreddit} with time range: ${timeRange}`);
-      setNewSubreddit('');
+      console.log(
+        `Adding new subreddit: ${newSubreddit} with time range: ${timeRange}`,
+      );
+      setNewSubreddit("");
       const response = await fetch(`${apiUrl}/subreddits/ingest`, {
         method: "POST",
-        body: JSON.stringify({ subreddits: { name: newSubreddit, sortBy: timeRange } }),
+        body: JSON.stringify({
+          subreddits: { name: newSubreddit, sortBy: timeRange },
+        }),
       });
       if (!response.ok) {
         throw new Error(`Response status: ${response.status}`);
       }
       const data = await response.json();
       const addedSubreddit: Subreddit = {
-        "name": data.Name,
-        "numberOfSubscribers": data.NumberOfSubscribers
-      }
-      setSubreddits(oldArray => [...oldArray, addedSubreddit]);
-      toast(`Subscribed to r/${newSubreddit}`, {})
+        name: data.Name,
+        numberOfSubscribers: data.NumberOfSubscribers,
+      };
+      setSubreddits((oldArray) => [...oldArray, addedSubreddit]);
+      toast(`Subscribed to r/${newSubreddit}`, {});
     }
   };
 
@@ -73,29 +97,39 @@ const SubredditDashboard = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Subscribed Subreddits</h1>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Subscribers</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {subreddits.map((subreddit) => (
-            <TableRow key={subreddit.name}>
-              <TableCell>{subreddit.name}</TableCell>
-              <TableCell>{subreddit.numberOfSubscribers}</TableCell>
-              <TableCell>
-                <div className='flex items-center gap-2'>
-                  <Button onClick={() => handleIngestion(subreddit.name, "day")}>Ingest Day</Button>
-                  <Button onClick={() => handleIngestion(subreddit.name, "month")}>Ingest Month</Button>
-                </div>
-              </TableCell>
+      {subreddits.length > 0 && (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Subscribers</TableHead>
+              <TableHead>Action</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {subreddits.map((subreddit) => (
+              <TableRow key={subreddit.name}>
+                <TableCell>{subreddit.name}</TableCell>
+                <TableCell>{subreddit.numberOfSubscribers}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => handleIngestion(subreddit.name, "day")}
+                    >
+                      Ingest Day
+                    </Button>
+                    <Button
+                      onClick={() => handleIngestion(subreddit.name, "month")}
+                    >
+                      Ingest Month
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       <Card className="mt-8">
         <CardHeader>
@@ -121,7 +155,9 @@ const SubredditDashboard = () => {
           </form>
         </CardContent>
         <CardFooter>
-          <Button type="submit" onClick={handleAddSubreddit}>Add Subreddit</Button>
+          <Button type="submit" onClick={handleAddSubreddit}>
+            Add Subreddit
+          </Button>
         </CardFooter>
       </Card>
     </div>

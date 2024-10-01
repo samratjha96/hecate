@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import SubredditDashboard from '@/components/SubredditDashboard'
+import SubredditDashboard from "@/components/SubredditDashboard";
 
 export default function Home() {
   return (
