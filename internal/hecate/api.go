@@ -63,3 +63,25 @@ func GetAllSubreddits(db *database.DB) ([]SubredditFrontendResponse, error) {
 	}
 	return subredditResponses, nil
 }
+
+func GetAllPostsForSubreddit(db *database.DB, subredditName string) ([]SubredditPostFrontendResponse, error) {
+	fetchedPosts, err := db.GetSubredditPosts(subredditName)
+	if err != nil {
+		log.Printf("Failed to get posts for subreddit %s with error: %v", subredditName, err)
+		return nil, err
+	}
+	var postsResponses []SubredditPostFrontendResponse
+	for _, dao := range fetchedPosts {
+		postsResponses = append(
+			postsResponses,
+			SubredditPostFrontendResponse{
+				Title:         dao.Title,
+				Content:       dao.Content,
+				DiscussionURL: dao.DiscussionURL,
+				CommentCount:  dao.CommentCount,
+				Upvotes:       dao.Upvotes,
+			},
+		)
+	}
+	return postsResponses, nil
+}

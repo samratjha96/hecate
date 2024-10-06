@@ -21,6 +21,14 @@ type SubredditDao struct {
 	NumberOfSubscribers int
 }
 
+type SubredditPostDao struct {
+	Title         string
+	Content       string
+	DiscussionURL string
+	CommentCount  int
+	Upvotes       int
+}
+
 func (db *DB) GetAllSubreddits() ([]SubredditDao, error) {
 	fetcher := func(page, limit int) (PaginatedResult[SubredditDao], error) {
 		subreddits, nextPage, err := db.getSubredditsWithPagination(Paginate{
@@ -110,4 +118,56 @@ func (db *DB) UpsertPost(post reddit.RedditPost, subredditName string) error {
 	}
 
 	return nil
+}
+
+func (db *DB) GetSubredditPosts(subredditName string) ([]SubredditPostDao, error) {
+	fetcher := func(page, limit int) (PaginatedResult[SubredditPostDao], error) {
+		posts, nextPage, err := db.getSubredditPostsWithPagination(subredditName, Paginate{
+			Page:  page,
+			Limit: limit,
+		})
+		return PaginatedResult[SubredditPostDao]{
+			Items:    posts,
+			NextPage: nextPage,
+		}, err
+	}
+
+	return FetchAll(fetcher, 1, 10)
+}
+
+func (db *DB) getSubredditPostsWithPagination(subredditName string, pagination Paginate) ([]SubredditPostDao, int, error) {
+	offset := (pagination.Page - 1) * pagination.Limit
+	nextPage := pagination.Page
+
+	query := `
+        SELECT title, content, discussion_url, comment_count, upvotes
+        FROM posts
+        WHERE subreddit_name = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+        OFFSET $3
+    `
+
+	rows, err := db.Query(query, subredditName, pagination.Limit, offset)
+	if err != nil {
+		return nil, nextPage, err
+	}
+	defer rows.Close()
+
+	var posts []SubredditPostDao
+	for rows.Next() {
+		var p SubredditPostDao
+
+		err := rows.Scan(&p.Title, &p.Content, &p.DiscussionURL, &p.CommentCount, &p.Upvotes)
+		if err != nil {
+			return posts, nextPage, err
+		}
+		posts = append(posts, p)
+	}
+
+	if len(posts) > 0 {
+		nextPage = pagination.Page + 1
+	}
+
+	return posts, nextPage, nil
 }

@@ -15,10 +15,6 @@ import (
 	"github.com/samratjha96/hecate/internal/hecate"
 )
 
-type SubscribePayload struct {
-	Subscription hecate.RedditSubscription `json:"subreddit"`
-}
-
 func main() {
 	// Initialize database connection
 	db, err := database.NewDB()
@@ -62,29 +58,31 @@ func main() {
 	r.Route("/subreddits", func(r chi.Router) {
 
 		r.Get("/", subredditGetHandler(db))
+		r.Get("/{subredditName}", subredditPostsGetHandler(db))
 		r.Post("/ingest", subscribeHandler(db))
 	})
 
-	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("SERVER_PORT")), r)
+	server := fmt.Sprintf(":%s", os.Getenv("SERVER_PORT"))
+	fmt.Printf("Starting server on server %v", server)
+	http.ListenAndServe(server, r)
 }
 
 func subscribeHandler(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
-		subreddit := SubscribePayload{}
+		subreddit := hecate.SubscribeFrontendRequest{}
 		err := decoder.Decode(&subreddit)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			respondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 		subscriptions, err := hecate.IngestSubreddit(db, subreddit.Subscription)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(subscriptions)
+
+		respondWithJson(w, http.StatusCreated, subscriptions)
 	}
 }
 
@@ -92,11 +90,21 @@ func subredditGetHandler(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		subreddits, err := hecate.GetAllSubreddits(db)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusFound)
-		json.NewEncoder(w).Encode(subreddits)
+		respondWithJson(w, http.StatusCreated, subreddits)
+	}
+}
+
+func subredditPostsGetHandler(db *database.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		subredditName := chi.URLParam(r, "subredditName")
+		posts, err := hecate.GetAllPostsForSubreddit(db, subredditName)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		respondWithJson(w, http.StatusOK, posts)
 	}
 }
