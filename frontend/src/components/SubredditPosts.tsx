@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -95,7 +95,7 @@ const SubredditPosts = () => {
               </TableBody>
             </Table>
           ) : (
-            <p>No posts to display. Enter a subreddit name and click "Fetch Posts" to view posts.</p>
+            <p>Nothing to display. Enter a subreddit name to view posts</p>
           )}
         </CardContent>
       </Card>
