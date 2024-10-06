@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/lib/utils";
 
 interface Post {
   title: string;
@@ -25,12 +26,10 @@ const SubredditPosts = () => {
   const [subredditName, setSubredditName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
   const fetchPosts = async (subreddit: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`${apiUrl}/subreddits/${subreddit}`);
+      const response = await fetch(`${API_BASE_URL}/subreddits/${subreddit}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

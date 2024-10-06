@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/lib/utils";
 
 interface Subreddit {
   name: string;
@@ -31,8 +32,6 @@ interface Subreddit {
 }
 
 const SubredditDashboard = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
   const [subreddits, setSubreddits] = useState<Subreddit[]>([]);
   const fetchedSubredditsRef = useRef(subreddits);
   const [newSubreddit, setNewSubreddit] = useState("");
@@ -47,7 +46,7 @@ const SubredditDashboard = () => {
 
   const fetchSubreddits = async () => {
     try {
-      const response = await fetch("http://localhost:8000/subreddits/");
+      const response = await fetch(`${API_BASE_URL}/subreddits/`);
       const data = await response.json();
       if (fetchedSubredditsRef.current.length !== data.length) {
         setSubreddits(data);
@@ -58,8 +57,7 @@ const SubredditDashboard = () => {
   };
 
   const handleIngestion = async (subredditName: string, timeRange: string) => {
-    console.log("Ingesting:", { subredditName, timeRange });
-    const response = await fetch(`${apiUrl}/subreddits/ingest`, {
+    const response = await fetch(`${API_BASE_URL}/subreddits/ingest`, {
       method: "POST",
       body: JSON.stringify({
         subreddit: { name: subredditName, sortBy: timeRange },
@@ -80,7 +78,7 @@ const SubredditDashboard = () => {
         `Adding new subreddit: ${newSubreddit} with time range: ${timeRange}`,
       );
       setNewSubreddit("");
-      const response = await fetch(`${apiUrl}/subreddits/ingest`, {
+      const response = await fetch(`${API_BASE_URL}/subreddits/ingest`, {
         method: "POST",
         body: JSON.stringify({
           subreddits: { name: newSubreddit, sortBy: timeRange },
