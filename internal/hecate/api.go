@@ -8,9 +8,22 @@ import (
 	"github.com/samratjha96/hecate/internal/reddit"
 )
 
-type RedditSubscription struct {
-	Name   string `json:"name"`
-	SortBy string `json:"sortBy"`
+func IngestAllSubreddit(db *database.DB, sortBy string) error {
+	subreddits, err := db.GetAllSubreddits()
+	if err != nil {
+		log.Printf("Failed to fetch subreddits: %v", err)
+		return err
+	}
+
+	for _, subreddit := range subreddits {
+		log.Printf("Ingesting subreddit %s", subreddit.Name)
+		_, err := IngestSubreddit(db, RedditSubscription{Name: subreddit.Name, SortBy: sortBy})
+		if err != nil {
+			log.Printf("Failed to ingest subreddit %s: %v", subreddit.Name, err)
+			return err
+		}
+	}
+	return nil
 }
 
 func IngestSubreddit(db *database.DB, subreddit RedditSubscription) (reddit.Subreddit, error) {

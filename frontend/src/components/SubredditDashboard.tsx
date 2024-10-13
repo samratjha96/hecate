@@ -71,6 +71,19 @@ const SubredditDashboard = () => {
     toast(`Ingesting data from r/${data.Name}`);
   };
 
+  const handleIngestionAll = async (timeRange: string) => {
+    const response = await fetch(`${API_BASE_URL}/subreddits/ingest-all`, {
+      method: "POST",
+      body: JSON.stringify({
+        subreddit: { sortBy: timeRange },
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+    toast(`Ingesting all subreddits for ${timeRange}`);
+  };
+
   const handleAddSubreddit = async (e: React.FormEvent<EventTarget>) => {
     e.preventDefault();
     if (newSubreddit) {
@@ -81,7 +94,7 @@ const SubredditDashboard = () => {
       const response = await fetch(`${API_BASE_URL}/subreddits/ingest`, {
         method: "POST",
         body: JSON.stringify({
-          subreddits: { name: newSubreddit, sortBy: timeRange },
+          subreddit: { name: newSubreddit, sortBy: timeRange },
         }),
       });
       if (!response.ok) {
@@ -102,39 +115,55 @@ const SubredditDashboard = () => {
       <h1 className="text-2xl font-bold mb-4">Subscribed Subreddits</h1>
 
       {subreddits.length > 0 && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Subscribers</TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {subreddits.map((subreddit) => (
-              <TableRow key={subreddit.name}>
-                <TableCell>{subreddit.name}</TableCell>
-                <TableCell>{subreddit.numberOfSubscribers}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => handleIngestion(subreddit.name, "day")}
-                    >
-                      Ingest Day
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => handleIngestion(subreddit.name, "month")}
-                    >
-                      Ingest Month
-                    </Button>
-                  </div>
-                </TableCell>
+        <div>
+          <div className="m-8 flex flex-row gap-4">
+            <Button
+              variant="secondary"
+              onClick={() => handleIngestionAll("month")}
+            >
+              Ingest All Month
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => handleIngestionAll("day")}
+            >
+              Ingest All Day
+            </Button>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Subscribers</TableHead>
+                <TableHead>Action</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {subreddits.map((subreddit) => (
+                <TableRow key={subreddit.name}>
+                  <TableCell>{subreddit.name}</TableCell>
+                  <TableCell>{subreddit.numberOfSubscribers}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => handleIngestion(subreddit.name, "day")}
+                      >
+                        Ingest Day
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleIngestion(subreddit.name, "month")}
+                      >
+                        Ingest Month
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       <Card className="mt-8">

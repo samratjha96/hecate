@@ -61,7 +61,8 @@ func main() {
 
 		router.Get("/", subredditGetHandler(db))
 		router.Get("/{subredditName}", subredditPostsGetHandler(db))
-		router.Post("/ingest", subscribeHandler(db))
+		router.Post("/ingest", ingestSubredditHandler(db))
+		router.Post("/ingest-all", ingestAllSubredditsHandler(db))
 	})
 
 	serverPort, exists := os.LookupEnv("SERVER_PORT")

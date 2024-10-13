@@ -13,6 +13,15 @@ type SubredditPostFrontendResponse struct {
 	Upvotes       int    `json:"upvotes"`
 }
 
+type RedditSubscription struct {
+	Name   string `json:"name"`
+	SortBy string `json:"sortBy"`
+}
+
 type SubscribeFrontendRequest struct {
 	Subscription RedditSubscription `json:"subreddit"`
+}
+
+type IngestAllFrontendRequest struct {
+	SortBy string `json:"sortBy"`
 }

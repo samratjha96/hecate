@@ -9,7 +9,7 @@ import (
 	"github.com/samratjha96/hecate/internal/hecate"
 )
 
-func subscribeHandler(db *database.DB) http.HandlerFunc {
+func ingestSubredditHandler(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 		subreddit := hecate.SubscribeFrontendRequest{}
@@ -25,6 +25,24 @@ func subscribeHandler(db *database.DB) http.HandlerFunc {
 		}
 
 		respondWithJson(w, http.StatusCreated, subscriptions)
+	}
+}
+func ingestAllSubredditsHandler(db *database.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
+		request := hecate.IngestAllFrontendRequest{}
+		err := decoder.Decode(&request)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		err = hecate.IngestAllSubreddit(db, request.SortBy)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		respondWithJson(w, http.StatusOK, make(map[string]string))
 	}
 }
 
