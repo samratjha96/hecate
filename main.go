@@ -64,7 +64,12 @@ func main() {
 		router.Post("/ingest", subscribeHandler(db))
 	})
 
-	server := fmt.Sprintf(":%s", os.Getenv("SERVER_PORT"))
-	fmt.Printf("Starting server on server %v", server)
-	http.ListenAndServe(server, r)
+	serverPort, exists := os.LookupEnv("SERVER_PORT")
+	if !exists {
+		fmt.Println("Using default port 8000")
+		serverPort = "8000"
+	}
+	serverAddr := fmt.Sprintf(":%s", serverPort)
+	fmt.Printf("Starting server on port %v", serverAddr)
+	http.ListenAndServe(serverAddr, r)
 }
