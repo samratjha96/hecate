@@ -12,7 +12,7 @@ services:
     depends_on:
       - hecate
   db:
-    image: postgres:13
+    image: postgres:17
     environment:
       POSTGRES_DB: hecate
       POSTGRES_USER: admin
@@ -32,5 +32,23 @@ services:
     ports:
       - "8000:8000"
 
+  backup:
+    image: prodrigestivill/postgres-backup-local
+    restart: always
+    depends_on:
+      - db
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=hecate
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - SCHEDULE=@daily
+      - BACKUP_KEEP_DAYS=7
+      - BACKUP_KEEP_WEEKS=4
+      - BACKUP_KEEP_MONTHS=6
+    volumes:
+      - ./db-backups:/backups
+
 volumes:
   postgres_data:
+
