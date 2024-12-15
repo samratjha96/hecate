@@ -1,6 +1,7 @@
 package reddit
 
 import (
+	"context"
 	"fmt"
 	"html"
 	"net/http"
@@ -8,17 +9,26 @@ import (
 	"time"
 )
 
+const (
+	baseURL         = "https://www.reddit.com/r/%s/top.json?t=%s"
+	defaultTimeout  = 30 * time.Second
+	userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"
+)
+
+// Client represents a Reddit API client
 type Client struct {
 	httpClient *http.Client
 	userAgent  string
 }
 
+// Subreddit represents a Reddit subreddit
 type Subreddit struct {
 	Name                string
 	NumberOfSubscribers int
 	Posts               RedditPosts
 }
 
+// RedditPost represents a single Reddit post
 type RedditPost struct {
 	PostId        string
 	Title         string
@@ -29,8 +39,10 @@ type RedditPost struct {
 	TimePosted    time.Time
 }
 
+// RedditPosts is a slice of RedditPost
 type RedditPosts []RedditPost
 
+// subredditResponseJson represents the JSON structure of a Reddit API response
 type subredditResponseJson struct {
 	Data struct {
 		Children []struct {
@@ -60,39 +72,48 @@ type subredditResponseJson struct {
 	} `json:"data"`
 }
 
+// NewClient creates a new Reddit API client
 func NewClient(userAgent string) *Client {
 	return &Client{
-		httpClient: &http.Client{Timeout: time.Second * 30},
+		httpClient: &http.Client{Timeout: defaultTimeout},
 		userAgent:  userAgent,
 	}
 }
 
-func makeRequest(subreddit string, sort string) (*http.Request, error) {
-	requestUrl := fmt.Sprintf("https://www.reddit.com/r/%s/top.json?t=%s", subreddit, strings.ToLower(sort))
-
+// makeRequest creates a new HTTP request for the Reddit API
+func makeRequest(subreddit, sort string) (*http.Request, error) {
+	requestUrl := fmt.Sprintf(baseURL, subreddit, strings.ToLower(sort))
 	request, err := http.NewRequest("GET", requestUrl, nil)
-	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0")
-
-	return request, err
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	request.Header.Set("User-Agent", userAgentString)
+	return request, nil
 }
 
-func (c *Client) DescribeSubreddit(subreddit string, sort string) (Subreddit, error) {
-	request, err := makeRequest(subreddit, sort)
+// DescribeSubreddit fetches and describes a subreddit
+func (c *Client) DescribeSubreddit(ctx context.Context, subreddit, sort string) (Subreddit, error) {
+	if subreddit == "" || sort == "" {
+		return Subreddit{}, fmt.Errorf("subreddit and sort cannot be empty")
+	}
 
+	request, err := makeRequest(subreddit, sort)
 	if err != nil {
 		return Subreddit{}, err
 	}
-	responseJson, err := decodeJsonFromRequest[subredditResponseJson](c.httpClient, request)
+
+	responseJson, err := decodeJSONFromRequest[subredditResponseJson](ctx, c.httpClient, request)
+	if err != nil {
+		return Subreddit{}, fmt.Errorf("failed to decode JSON response: %w", err)
+	}
 
 	if len(responseJson.Data.Children) == 0 {
-		return Subreddit{}, fmt.Errorf("no posts found")
+		return Subreddit{}, fmt.Errorf("no posts found for subreddit: %s", subreddit)
 	}
 
 	posts := make([]RedditPost, 0, len(responseJson.Data.Children))
-
-	for i := range responseJson.Data.Children {
-		post := &responseJson.Data.Children[i].Data
-
+	for _, child := range responseJson.Data.Children {
+		post := child.Data
 		forumPost := RedditPost{
 			PostId:        post.Id,
 			Title:         html.UnescapeString(post.Title),
@@ -102,7 +123,6 @@ func (c *Client) DescribeSubreddit(subreddit string, sort string) (Subreddit, er
 			Upvotes:       post.Upvotes,
 			TimePosted:    time.Unix(int64(post.Time), 0),
 		}
-
 		posts = append(posts, forumPost)
 	}
 
@@ -110,5 +130,5 @@ func (c *Client) DescribeSubreddit(subreddit string, sort string) (Subreddit, er
 		Name:                subreddit,
 		NumberOfSubscribers: responseJson.Data.Children[0].Data.SubredditSubscribers,
 		Posts:               posts,
-	}, err
+	}, nil
 }

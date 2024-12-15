@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -21,10 +21,21 @@ interface Post {
   upvotes: number;
 }
 
-const SubredditPosts = () => {
+interface SubredditPostsProps {
+  selectedSubreddit?: string;
+}
+
+const SubredditPosts = ({ selectedSubreddit }: SubredditPostsProps) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [subredditName, setSubredditName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedSubreddit) {
+      setSubredditName(selectedSubreddit);
+      fetchPosts(selectedSubreddit);
+    }
+  }, [selectedSubreddit]);
 
   const fetchPosts = async (subreddit: string) => {
     setLoading(true);
@@ -51,8 +62,8 @@ const SubredditPosts = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <Card className="mb-8">
+    <div className="w-full lg:w-1/2 p-4">
+      <Card>
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
             Subreddit Posts
@@ -81,12 +92,15 @@ const SubredditPosts = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {posts.map((post) => (
-                  <TableRow key={post.title}>
+                {posts.map((post, index) => (
+                  <TableRow key={`${post.title}-${index}`}>
                     <TableCell className="max-w-4xl truncate overflow-hidden">
-                        <Button variant="link" onClick={() => window.open(post.discussionUrl, "_blank")}>
-                            {post.title}
-                        </Button>
+                      <Button
+                        variant="link"
+                        onClick={() => window.open(post.discussionUrl, "_blank")}
+                      >
+                        {post.title}
+                      </Button>
                     </TableCell>
                     <TableCell>{post.upvotes}</TableCell>
                     <TableCell>{post.commentCount}</TableCell>

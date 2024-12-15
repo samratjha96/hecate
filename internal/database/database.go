@@ -3,36 +3,48 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const (
+	dbFileName = "hecate.db"
+	dirPerms   = 0755
+)
+
 type DB struct {
 	*sql.DB
 }
 
+// NewDB creates a new database connection
 func NewDB() (*DB, error) {
-	// Create data directory if it doesn't exist
-	dataDir := "./data"
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create data directory: %v", err)
+	dataDir := os.Getenv("DB_DIRECTORY")
+	if dataDir == "" {
+		return nil, fmt.Errorf("DB_DIRECTORY environment variable is not set")
 	}
 
-	dbPath := filepath.Join(dataDir, "hecate.db")
+	if err := os.MkdirAll(dataDir, dirPerms); err != nil {
+		return nil, fmt.Errorf("failed to create data directory: %w", err)
+	}
+
+	dbPath := filepath.Join(dataDir, dbFileName)
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %v", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %v", err)
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
+	log.Printf("Successfully connected to database at %s", dbPath)
 	return &DB{db}, nil
 }
 
+// CreateTables creates the necessary tables in the database
 func (db *DB) CreateTables() error {
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS subreddits (
@@ -65,12 +77,21 @@ func (db *DB) CreateTables() error {
 		)`,
 	}
 
-	for _, query := range queries {
-		_, err := db.Exec(query)
-		if err != nil {
-			return fmt.Errorf("failed to create table: %v", err)
+	for i, query := range queries {
+		if _, err := db.Exec(query); err != nil {
+			return fmt.Errorf("failed to create table (query %d): %w", i+1, err)
 		}
 	}
 
+	log.Println("Successfully created all necessary tables")
+	return nil
+}
+
+// Close closes the database connection
+func (db *DB) Close() error {
+	if err := db.DB.Close(); err != nil {
+		return fmt.Errorf("failed to close database connection: %w", err)
+	}
+	log.Println("Database connection closed successfully")
 	return nil
 }

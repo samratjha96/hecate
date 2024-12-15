@@ -1,5 +1,10 @@
 package hecate
 
+type RedditSubscription struct {
+	Name   string `json:"name"`
+	SortBy string `json:"sortBy"`
+}
+
 type SubredditFrontendResponse struct {
 	Name                string `json:"name"`
 	NumberOfSubscribers int    `json:"numberOfSubscribers"`
@@ -11,17 +16,17 @@ type SubredditPostFrontendResponse struct {
 	DiscussionURL string `json:"discussionUrl"`
 	CommentCount  int    `json:"commentCount"`
 	Upvotes       int    `json:"upvotes"`
-}
-
-type RedditSubscription struct {
-	Name   string `json:"name"`
-	SortBy string `json:"sortBy"`
+	SubredditName string `json:"subredditName,omitempty"`
 }
 
 type SubscribeFrontendRequest struct {
-	Subscription RedditSubscription `json:"subreddit"`
+	Subreddit RedditSubscription `json:"subreddit"`
 }
 
 type IngestAllFrontendRequest struct {
 	SortBy string `json:"sortBy"`
+}
+
+type SearchPostsResponse struct {
+	Posts []SubredditPostFrontendResponse `json:"posts"`
 }

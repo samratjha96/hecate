@@ -15,6 +15,7 @@ services:
     container_name: "hecate"
     build: .
     environment:
+      - DB_DIRECTORY=/app/data
       - SERVER_PORT=8000
     ports:
       - "8000:8000"
