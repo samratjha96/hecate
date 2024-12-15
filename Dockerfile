@@ -1,15 +1,20 @@
 FROM golang
 
+# Install SQLite dependencies
+RUN apt-get update && apt-get install -y sqlite3 build-essential
+
 WORKDIR /app
+
+# Create data directory for SQLite
+RUN mkdir -p /app/data && chmod 777 /app/data
 
 COPY . .
 
 ENV GOPROXY=direct
-
 ENV SERVER_PORT=8000
-ENV DATABASE_URL="postgres://admin:password@db:5432/hecate?sslmode=disable"
 
-RUN go build -o hecate *.go
+# Build with SQLite support
+RUN CGO_ENABLED=1 go build -o hecate *.go
 
 EXPOSE 8000
 

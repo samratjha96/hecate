@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 
-	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type DB struct {
@@ -13,7 +14,14 @@ type DB struct {
 }
 
 func NewDB() (*DB, error) {
-	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	// Create data directory if it doesn't exist
+	dataDir := "./data"
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create data directory: %v", err)
+	}
+
+	dbPath := filepath.Join(dataDir, "hecate.db")
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
@@ -28,32 +36,32 @@ func NewDB() (*DB, error) {
 func (db *DB) CreateTables() error {
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS subreddits (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) UNIQUE NOT NULL,
-			num_subscribers BIGINT DEFAULT 0,
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT UNIQUE NOT NULL,
+			num_subscribers INTEGER DEFAULT 0,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE TABLE IF NOT EXISTS posts (
-			id SERIAL PRIMARY KEY,
-			post_id VARCHAR(50) UNIQUE NOT NULL,
-			subreddit_name VARCHAR(255) NOT NULL,
-			title VARCHAR(300) NOT NULL,
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			post_id TEXT UNIQUE NOT NULL,
+			subreddit_name TEXT NOT NULL,
+			title TEXT NOT NULL,
 			content TEXT,
-			discussion_url VARCHAR(255),
+			discussion_url TEXT,
 			comment_count INTEGER,
 			upvotes INTEGER,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			metadata JSONB
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE TABLE IF NOT EXISTS comments (
-			id SERIAL PRIMARY KEY,
-			post_id INTEGER REFERENCES posts(id),
-			parent_comment_id INTEGER REFERENCES comments(id),
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			post_id INTEGER,
+			parent_comment_id INTEGER,
 			content TEXT NOT NULL,
-			comment_id VARCHAR(50) UNIQUE NOT NULL,
+			comment_id TEXT UNIQUE NOT NULL,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			metadata JSONB
+			FOREIGN KEY (post_id) REFERENCES posts(id),
+			FOREIGN KEY (parent_comment_id) REFERENCES comments(id)
 		)`,
 	}
 

@@ -11,44 +11,28 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
       - hecate
-  db:
-    image: postgres:17
-    environment:
-      POSTGRES_DB: hecate
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
   hecate:
     container_name: "hecate"
     build: .
     environment:
-      - DATABASE_URL=$DATABASE_URL
       - SERVER_PORT=8000
-    depends_on:
-      - db
     ports:
       - "8000:8000"
-
-  backup:
-    image: prodrigestivill/postgres-backup-local
-    restart: always
-    depends_on:
-      - db
-    environment:
-      - POSTGRES_HOST=db
-      - POSTGRES_DB=hecate
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=password
-      - SCHEDULE=@daily
-      - BACKUP_KEEP_DAYS=7
-      - BACKUP_KEEP_WEEKS=4
-      - BACKUP_KEEP_MONTHS=6
     volumes:
-      - ./db-backups:/backups
+      - ./data:/app/data
+
+  # Standalone PostgreSQL 16 container
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
-
